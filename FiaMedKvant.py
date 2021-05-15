@@ -260,8 +260,8 @@ class FiaGame:
             raise Exception('Error, number of players must either be left as default or be an integer greater than one')
         else:
             self.numPlay = numPlay
-        
-        
+
+
         if piecesPerPlayer == None:
             self.numPiece = 2*numPlay
         if type(piecesPerPlayer) != int or piecesPerPlayer < 1:
@@ -269,37 +269,37 @@ class FiaGame:
         else:
             self.numPiece = piecesPerPlayer*self.numPlay
             self.piecesPerPlayer = piecesPerPlayer
-        
-        
+
+
         if boardLength == None:
             self.boardLength = 10
         if type(boardLength) != int or boardLength < 1:
             raise Exception('Error, board length must either be left as default or be an integer greater than zero')
         else:
             self.boardLength = boardLength
-            
-        
+
+
         if maxRoll == None:
             self.maxRoll = 6
         if type(maxRoll) != int or maxRoll < 1:
             raise Exception('Error, maximum roll must either be left as default or be an integer greater than zero')
         else:
             self.maxRoll = maxRoll
-        
 
-        
+
+
         self.GameState = Node(Branch(BoardState(self.boardLength, self.numPiece, self.numPlay)))
-    
-    
-    
+
+
+
     def getParameters(self):
         """
         Returns the game parameters:
         Number of players, number of pieces, boardlength and maximum roll
         """
         return self.numPlay, self.numPiece, self.boardLength, self.maxRoll
-    
-    
+
+
     def roll(self):
         """
         Rolls a maxRoll-sided die and returns it
@@ -321,8 +321,8 @@ class FiaGame:
             return probs
         else:
             return -1
-            
-            
+
+
     def quantumMove(self, pieceId, maxMove):
         """
         Performs a quantum move of a piece up to the number of steps specified
@@ -340,11 +340,11 @@ class FiaGame:
         if type(maxMove) == int and maxMove > 0:
             validMaxMove = True
             returnVal = returnVal + 2
-            
+
         if validID and validMaxMove:
             self.GameState.quantumMove(pieceId, maxMove)
         return returnVal
-    
+
     def observe(self, position):
         """
         Observes a certain position, returns an array with all pieces on the position
@@ -372,7 +372,7 @@ class FiaGame:
             return observedPieces
         else:
             return -1
-        
+
     def getStates(self):
         return self.GameState.getStates()
 
@@ -472,9 +472,8 @@ def Play():
             print(w)
 
 
-
-
-
+if __name__ == "__main__":
+    Play()
 
 
 
