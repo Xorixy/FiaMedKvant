@@ -405,6 +405,7 @@ def Play():
                 pieces.append(i + currentPlayer*numPiece//numPlay)
             print(f'Your pieces are {", ".join([color(currentPlayer, piece) for piece in pieces])}')
             print(f'It is your turn to roll. In order to roll a die press {color(currentPlayer, "r")}.')
+            print(f'If you want to see the possible positions of a all pieces, type "{color(currentPlayer, "p")}".')
             print(f'If you want to see the possible positions of a piece n, type "{color(currentPlayer, "pn")}".')
             command = input()
             if len(command) == 0:
@@ -415,6 +416,7 @@ def Play():
         elif phase == 1:
             print(f'You rolled a {color(currentPlayer, roll)}\n')
             print(f'Which piece would you like to move? Your pieces are {", ".join([color(currentPlayer, piece) for piece in pieces])}')
+            print(f'If you want to see the possible positions of a all pieces, type "{color(currentPlayer, "p")}".')
             print(f'If you want to see the possible positions of a piece n, type "{color(currentPlayer, "pn")}".')
             command = input()
             if len(command) == 0:
@@ -458,16 +460,20 @@ def Play():
         if command == 'q':
             break
         if command[0] == 'p':
-            try:
-                pieceId = int(command[1:])
-            except:
-                pieceId = None
-            probs = Game.getProbabilities(pieceId)
-            if probs == -1:
-                print('\nInvalid piece')
+            if command == 'p':
+                piecesId = range(Game.numPiece)
             else:
-                print((' '*5).join([str(i) for i in range(boardlen+1)]))
-                print("  ".join(probs))
+                try:
+                    piecesId = [int(command[1:])]
+                except:
+                    piecesId = None
+            if piecesId is not None:
+                print(' '*(len(str(Game.numPiece))+2) + (' '*5).join([str(i) for i in range(boardlen+1)]))
+                for piece in piecesId:
+                    probs = Game.getProbabilities(piece)
+                    print(color(piece // Game.piecesPerPlayer, f'{piece}:'.ljust(len(str(Game.numPiece))+2) + '  '.join(probs)))
+            else:
+                print('\nInvalid piece')
         if command == 'states':
             S, w = Game.getStates()
             print(S)
