@@ -6,7 +6,7 @@ Created on Thu May 13 22:10:24 2021
 """
 
 
-import numpy as np
+import numpy.random as rnd
 
 #         Red           Green         Yellow        Blue          Magenta       Cyan
 colors = ['\u001b[31m', '\u001b[32m', '\u001b[33m', '\u001b[34m', '\u001b[35m', '\u001b[36m']
@@ -247,6 +247,131 @@ class BoardState:
             return False
 
 
+class FiaGame:
+    def __init__(self, numPlay=None, piecesPerPlayer=None, boardLength=None, maxRoll=None):
+        """
+        Initialises a new game instance of Fia med kvant.
+        The playing variables can either be left as default or be specfied by the user,
+        with checks that only proper values are used (i.e the pieces per player must be greater than one and so on)
+        """
+        if numPlay == None:
+            self.numPlay = 2
+        if type(numPlay) != int or numPlay < 2:
+            raise Exception('Error, number of players must either be left as default or be an integer greater than one')
+        else:
+            self.numPlay = numPlay
+        
+        
+        if piecesPerPlayer == None:
+            self.numPiece = 2*numPlay
+        if type(piecesPerPlayer) != int or piecesPerPlayer < 1:
+            raise Exception('Error, pieces per player must either be left as default or be an integer greater than zero')
+        else:
+            self.numPiece = piecesPerPlayer*self.numPlay
+            self.piecesPerPlayer = piecesPerPlayer
+        
+        
+        if boardLength == None:
+            self.boardLength = 10
+        if type(boardLength) != int or boardLength < 1:
+            raise Exception('Error, board length must either be left as default or be an integer greater than zero')
+        else:
+            self.boardLength = boardLength
+            
+        
+        if maxRoll == None:
+            self.maxRoll = 6
+        if type(maxRoll) != int or maxRoll < 1:
+            raise Exception('Error, maximum roll must either be left as default or be an integer greater than zero')
+        else:
+            self.maxRoll = maxRoll
+        
+
+        
+        self.GameState = Node(Branch(BoardState(self.boardLength, self.numPiece, self.numPlay)))
+        return self.currentPlayer, self.phase
+    
+    
+    
+    def getParameters(self):
+        """
+        Returns the game parameters:
+        Number of players, number of pieces, boardlength and maximum roll
+        """
+        return self.numPlay, self.numPiece, self.boardLength, self.maxRoll
+    
+    
+    def roll(self):
+        """
+        Rolls a maxRoll-sided die and returns it
+        """
+        value = rnd.randint(1, self.maxRoll+1)
+        return value
+
+
+    def getProbabilities(self, pieceId):
+        """
+        Returns the probabilities of the position of the piece with a given ID
+        If given an invalid ID, returns -1
+        """
+        if type(pieceId) == int and (0 <= pieceId < self.numPiece):
+            probs = [0]*(self.boardLength+1)
+            States, weights = self.GameState.getStates()
+            for i in range(len(States)):
+                probs[States[i][pieceId]] = probs[States[i][pieceId]] + 1/weights[i]
+            return probs
+        else:
+            return -1
+            
+            
+    def quantumMove(self, pieceId, maxMove):
+        """
+        Performs a quantum move of a piece up to the number of steps specified
+        If the move was performed, returns 0
+        If an invalid piece is given, returns -1
+        If an invalid number of steps is given, returns -2
+        If both are invalid, returns -3
+        """
+        returnVal = -3
+        validID = False
+        validMaxMove = False
+        if type(pieceId) == int and 0 <= pieceId < self.numPiece:
+            validID = True
+            returnVal = returnVal + 1
+        if type(maxMove) == int and maxMove > 0:
+            validMaxMove = True
+            returnVal = returnVal + 2
+            
+        if validID and validMaxMove:
+            self.GameState.quantumMove(pieceId, maxMove)
+        return returnVal
+    
+    def observation(self, position):
+        """
+        Observes a certain position, returns an array with all pieces on the position
+        If the given position is invalid, returns -1
+        """
+        if type(position) == int and 0 <= position <= self.boardLength:
+            RandRoll = rnd.random()
+            SProb = 0
+            States, weights = self.GameState.getStates()
+            for i in range(len(States)):
+                if SProb <= RandRoll <= SProb + 1/weights[i]:
+                    observedState = States[i]
+                    break
+                else:
+                    SProb = SProb + 1/weights[i]
+            observedPieces = []
+            for i in range(len(observedState)):
+                if observedState[i] == position:
+                    observedPieces.append(i)
+            self.GameState.observation(observedPieces, position)
+            return observedPieces
+        else:
+            return -1
+        
+        
+
 def Play():
     print('Hello! How many players?')
     numPlay = input()
@@ -280,7 +405,7 @@ def Play():
             if len(command) == 0:
                 command = '0'
             if command == 'r':
-                roll = np.random.randint(1, maxRoll + 1)
+                roll = rnd.randint(1, maxRoll+1)
                 phase = 1
         elif phase == 1:
             print(f'You rolled a {color(currentPlayer, roll)}\n')
@@ -309,7 +434,7 @@ def Play():
                 except:
                     tile = None
                 if not (tile == None) and (0 <= tile <= numPiece):
-                    RandRoll = np.random.random()
+                    RandRoll = rnd.random()
                     SProb = 0
                     States, weights = GameState.getStates()
                     for i in range(len(States)):
@@ -358,7 +483,8 @@ def Play():
            GameState = newState
 
 
-Play()
+
+
 
 
 
