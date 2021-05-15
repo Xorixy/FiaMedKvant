@@ -8,6 +8,12 @@ Created on Thu May 13 22:10:24 2021
 
 import numpy as np
 
+#         Red           Green         Yellow        Blue          Magenta       Cyan
+colors = ['\u001b[31m', '\u001b[32m', '\u001b[33m', '\u001b[34m', '\u001b[35m', '\u001b[36m']
+colorReset = '\u001b[0m'
+def color(colorIndex, text):
+    return colors[colorIndex] + str(text) + colorReset
+
 
 class Node:
     def __init__(self, Connection=None):
@@ -225,17 +231,23 @@ class BoardState:
             return False
 
 
-
-
 def Play():
     print('Hello! How many players?')
-    numPlay = int(input())
-    print('How many pieces per player?')
-    numPiece = int(input())*numPlay
-    print('How long is the board?')
-    boardlen = int(input())
-    print('How much is the maximum die roll?')
-    maxRoll = int(input())
+    numPlay = input()
+    if numPlay == '':
+        numPlay = 2
+        numPiece = 2*numPlay
+        boardlen = 10
+        maxRoll = 6
+    else:
+        numPlay = int(numPlay)
+        print('How many pieces per player?')
+        numPiece = int(input())*numPlay
+        print('How long is the board?')
+        boardlen = int(input())
+        print('How much is the maximum die roll?')
+        maxRoll = int(input())
+
     GameState = Node(Branch(BoardState(boardlen, numPiece, numPlay)))
     command = 'q'
     while(command != 'q'):
@@ -267,13 +279,13 @@ def Play():
     phase = 0
     while(True):
         if phase == 0:
-            print(f"\nIt is now player {currentPlayer + 1}'s turn")
+            print("\n" + color(currentPlayer, f"It is now player {currentPlayer + 1}'s turn"))
             pieces = []
             for i in range(numPiece//numPlay):
                 pieces.append(i + currentPlayer*numPiece//numPlay)
-            print(f'Your pieces are {pieces}')
-            print('It is your turn to roll. In order to roll a die press r.')
-            print('If you want to see the possible positions of a piece n, type "pn"')
+            print(f'Your pieces are {", ".join([color(currentPlayer, piece) for piece in pieces])}')
+            print(f'It is your turn to roll. In order to roll a die press {color(currentPlayer, "r")}.')
+            print(f'If you want to see the possible positions of a piece n, type {color(currentPlayer, "pn")}.')
             command = input()
             if len(command) == 0:
                 command = '0'
@@ -281,9 +293,9 @@ def Play():
                 roll = np.random.randint(1, maxRoll + 1)
                 phase = 1
         elif phase == 1:
-            print(f'You rolled a {roll}')
-            print(f'Which piece would you like to move? Your pieces are {pieces}')
-            print('If you want to see the possible positions of a piece n, type "pn"')
+            print(f'You rolled a {color(currentPlayer, roll)}\n')
+            print(f'Which piece would you like to move? Your pieces are {", ".join([color(currentPlayer, piece) for piece in pieces])}')
+            print(f'If you want to see the possible positions of a piece n, type {color(currentPlayer, "pn")}.')
             command = input()
             if len(command) == 0:
                 command = '0'
@@ -294,7 +306,7 @@ def Play():
             if currentPlayer*numPiece//numPlay <= pieceId and pieceId < (currentPlayer + 1)*numPiece//numPlay:
                 GameState.quantumMove(pieceId, roll)
                 phase = 2
-                print(f'Moved piece {pieceId} up to {roll} spaces.')
+                print(f'\nMoved piece {color(currentPlayer, pieceId)} up to {roll} spaces.')
         if phase == 2:
             print(f'You may now observe a tile, the board has spaces from 0 to {boardlen}')
             print('To observe a tile n, type "on"')
@@ -315,9 +327,9 @@ def Play():
                 observedPieces = []
                 for i in range(len(observedState)):
                     if observedState[i] == tile:
-                        observedPieces.append(i)
+                        observedPieces.append(color(i // (numPiece // numPlay), i))
                 else:
-                    print(f'The following piece(s) are on tile {tile}: {observedPieces}')
+                    print(f'The following piece(s) are on tile {tile}: {", ".join(observedPieces)}')
                 GameState.observation(observedPieces, tile)
                 phase = 3
         elif phase == 3:
