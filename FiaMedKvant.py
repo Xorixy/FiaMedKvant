@@ -285,7 +285,7 @@ def Play():
                 pieces.append(i + currentPlayer*numPiece//numPlay)
             print(f'Your pieces are {", ".join([color(currentPlayer, piece) for piece in pieces])}')
             print(f'It is your turn to roll. In order to roll a die press {color(currentPlayer, "r")}.')
-            print(f'If you want to see the possible positions of a piece n, type {color(currentPlayer, "pn")}.')
+            print(f'If you want to see the possible positions of a piece n, type "{color(currentPlayer, "pn")}".')
             command = input()
             if len(command) == 0:
                 command = '0'
@@ -295,7 +295,7 @@ def Play():
         elif phase == 1:
             print(f'You rolled a {color(currentPlayer, roll)}\n')
             print(f'Which piece would you like to move? Your pieces are {", ".join([color(currentPlayer, piece) for piece in pieces])}')
-            print(f'If you want to see the possible positions of a piece n, type {color(currentPlayer, "pn")}.')
+            print(f'If you want to see the possible positions of a piece n, type "{color(currentPlayer, "pn")}".')
             command = input()
             if len(command) == 0:
                 command = '0'
@@ -309,7 +309,7 @@ def Play():
                 print(f'\nMoved piece {color(currentPlayer, pieceId)} up to {roll} spaces.')
         if phase == 2:
             print(f'You may now observe a tile, the board has spaces from 0 to {boardlen}')
-            print('To observe a tile n, type "on"')
+            print(f'To observe a tile n, type "{color(currentPlayer, "on")}"')
             command = input()
             if len(command) == 0:
                 command = '0'
