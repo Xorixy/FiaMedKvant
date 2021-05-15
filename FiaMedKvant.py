@@ -289,7 +289,6 @@ class FiaGame:
 
         
         self.GameState = Node(Branch(BoardState(self.boardLength, self.numPiece, self.numPlay)))
-        return self.currentPlayer, self.phase
     
     
     
@@ -346,7 +345,7 @@ class FiaGame:
             self.GameState.quantumMove(pieceId, maxMove)
         return returnVal
     
-    def observation(self, position):
+    def observe(self, position):
         """
         Observes a certain position, returns an array with all pieces on the position
         If the given position is invalid, returns -1
@@ -366,11 +365,16 @@ class FiaGame:
                 if observedState[i] == position:
                     observedPieces.append(i)
             self.GameState.observation(observedPieces, position)
+            if self.GameState.getType() == Node and self.GameState.length() == 1:
+                newState = self.GameState.getLinks()[0]
+                del self.GameState
+                self.GameState = newState
             return observedPieces
         else:
             return -1
         
-        
+    def getStates(self):
+        return self.GameState.getStates()
 
 def Play():
     print('Hello! How many players?')
@@ -389,7 +393,7 @@ def Play():
         print('How much is the maximum die roll?')
         maxRoll = int(input())
 
-    GameState = Node(Branch(BoardState(boardlen, numPiece, numPlay)))
+    Game = FiaGame(numPlay, numPiece//numPlay, boardlen, maxRoll)
     currentPlayer = 0
     phase = 0
     while(True):
@@ -405,7 +409,7 @@ def Play():
             if len(command) == 0:
                 command = '0'
             if command == 'r':
-                roll = rnd.randint(1, maxRoll+1)
+                roll = Game.roll()
                 phase = 1
         elif phase == 1:
             print(f'You rolled a {color(currentPlayer, roll)}\n')
@@ -413,15 +417,21 @@ def Play():
             print(f'If you want to see the possible positions of a piece n, type "{color(currentPlayer, "pn")}".')
             command = input()
             if len(command) == 0:
-                command = '0'
+                command = 'None'
             try:
                 pieceId = int(command)
             except:
                 pieceId = -1
-            if currentPlayer*numPiece//numPlay <= pieceId and pieceId < (currentPlayer + 1)*numPiece//numPlay:
-                GameState.quantumMove(pieceId, roll)
+            if not (currentPlayer*numPiece//numPlay) <= pieceId < (currentPlayer + 1)*numPiece//numPlay:
+                pieceId = -1
+            returnCode = Game.quantumMove(pieceId, roll)
+            if returnCode == 0:
                 phase = 2
                 print(f'\nMoved piece {color(currentPlayer, pieceId)} up to {roll} spaces.')
+            elif returnCode == -1:
+                print('\nInvalid piece')
+            else:
+                print('Something weird is happening, invalid steps. Should not be able to happen, debug your code you idiot!')
         if phase == 2:
             print(f'You may now observe a tile, the board has spaces from 0 to {boardlen}')
             print(f'To observe a tile n, type "{color(currentPlayer, "on")}"')
@@ -433,23 +443,9 @@ def Play():
                     tile = int(command[1:])
                 except:
                     tile = None
-                if not (tile == None) and (0 <= tile <= numPiece):
-                    RandRoll = rnd.random()
-                    SProb = 0
-                    States, weights = GameState.getStates()
-                    for i in range(len(States)):
-                        if SProb <= RandRoll <= SProb + 1/weights[i]:
-                            observedState = States[i]
-                            break
-                        else:
-                            SProb = SProb + 1/weights[i]
-                    observedPieces = []
-                    for i in range(len(observedState)):
-                        if observedState[i] == tile:
-                            observedPieces.append(color(i // (numPiece // numPlay), i))
-                    else:
-                        print(f'The following piece(s) are on tile {tile}: {", ".join(observedPieces)}')
-                    GameState.observation(observedPieces, tile)
+                observedPieces = Game.observe(tile)
+                if observedPieces != -1:
+                    print(f'The following piece(s) are on tile {tile}: {", ".join(observedPieces)}')
                     phase = 3
                 else:
                     print('\nInvalid position')
@@ -465,22 +461,15 @@ def Play():
                 pieceId = int(command[1:])
             except:
                 pieceId = None
-            if not (pieceId == None) and (0 <= pieceId < numPiece):
-                probs = [0]*(boardlen+1)
-                States, weights = GameState.getStates()
-                for i in range(len(States)):
-                    probs[States[i][pieceId]] = probs[States[i][pieceId]] + 1/weights[i]
-                print(probs)
-            else:
+            probs = Game.getProbabilities(pieceId)
+            if probs == -1:
                 print('\nInvalid piece')
+            else:
+                print(probs)
         if command == 'states':
-            S, w = GameState.getStates()
+            S, w = Game.getStates()
             print(S)
             print(w)
-        while(GameState.getType() == Node and GameState.length() == 1):
-           newState = GameState.getLinks()[0]
-           del GameState
-           GameState = newState
 
 
 
