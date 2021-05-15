@@ -11,6 +11,7 @@ import numpy.random as rnd
 #         Red           Green         Yellow        Blue          Magenta       Cyan
 colors = ['\u001b[31m', '\u001b[32m', '\u001b[33m', '\u001b[34m', '\u001b[35m', '\u001b[36m']
 colorReset = '\u001b[0m'
+
 def color(colorIndex, text):
     return colors[colorIndex] + str(text) + colorReset
 
@@ -363,7 +364,7 @@ class FiaGame:
             observedPieces = []
             for i in range(len(observedState)):
                 if observedState[i] == position:
-                    observedPieces.append(i)
+                    observedPieces.append(color(i // (numPiece // numPlay), i))
             self.GameState.observation(observedPieces, position)
             if self.GameState.getType() == Node and self.GameState.length() == 1:
                 newState = self.GameState.getLinks()[0]
@@ -377,6 +378,8 @@ class FiaGame:
         return self.GameState.getStates()
 
 def Play():
+    global numPlay
+    global numPiece
     print('Hello! How many players?')
     numPlay = input()
     if numPlay == '':
