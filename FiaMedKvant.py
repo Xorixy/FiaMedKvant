@@ -113,6 +113,12 @@ class Node:
             return length + 1
 
     def observation(self, pieceId, position):
+        """
+        Given a list of observed pieces on a position, it passes this information to the nodes
+        or branches under it.
+        If any of its linked nodes/branches return false, (i.e they are not linked to any
+        valid board state) it flags itself for removal and returns false.
+        """
         removals = []
         for i in range(len(self.links)):
             if not self.links[i].observation(pieceId, position):
@@ -125,6 +131,12 @@ class Node:
             return True
 
     def quantumMove(self, pieceId, maxMove):
+        """
+        Given a pieceId and the maximum steps it took, it sends this information
+        down to its linked nodes/branches.
+        Any daughter branches are then replaced by nodes linking to the new branches
+        coresponding to the new states.
+        """
         if self.NodeType == Node:
             for element in self.links:
                 element.quantumMove(pieceId, maxMove)
@@ -136,6 +148,10 @@ class Node:
             self.addLink(newNodes)
 
     def getStates(self):
+        """
+        Returns all linked states under this node and their weights.
+        Also multiplies all weights by the number of links the node has.
+        """
         bStates = []
         weights = []
         for element in self.links:
@@ -249,32 +265,6 @@ def Play():
         maxRoll = int(input())
 
     GameState = Node(Branch(BoardState(boardlen, numPiece, numPlay)))
-    command = 'q'
-    while(command != 'q'):
-        command = input()
-        if len(command) == 0:
-            command = [None]
-        if command[0] == 'm':
-            pieceId, steps = command[1:].split('s')
-            pieceId = int(pieceId)
-            steps = int(steps)
-            GameState.quantumMove(pieceId, steps)
-            print(f'Moved piece {pieceId} {steps} steps')
-        if command[0] == 'o':
-            pieceId, position = command[1:].split('p')
-            pieceId = int(pieceId)
-            position = int(position)
-            GameState.observation(pieceId, position)
-            print(f'Observed {pieceId} on {position}')
-        while(GameState.getType() == Node and GameState.length() == 1):
-            newState = GameState.getLinks()[0]
-            del GameState
-            GameState = newState
-
-        if command == 'reset':
-            del GameState
-            GameState = Node(Branch(BoardState(boardlen, numPiece, numPlay)))
-        print(GameState.getStates())
     currentPlayer = 0
     phase = 0
     while(True):
@@ -314,24 +304,30 @@ def Play():
             if len(command) == 0:
                 command = '0'
             if command[0] == 'o':
-                RandRoll = np.random.random()
-                tile = int(command[1:])
-                SProb = 0
-                States, weights = GameState.getStates()
-                for i in range(len(States)):
-                    if SProb <= RandRoll <= SProb + 1/weights[i]:
-                        observedState = States[i]
-                        break
+                try:
+                    tile = int(command[1:])
+                except:
+                    tile = None
+                if not (tile == None) and (0 <= tile <= numPiece):
+                    RandRoll = np.random.random()
+                    SProb = 0
+                    States, weights = GameState.getStates()
+                    for i in range(len(States)):
+                        if SProb <= RandRoll <= SProb + 1/weights[i]:
+                            observedState = States[i]
+                            break
+                        else:
+                            SProb = SProb + 1/weights[i]
+                    observedPieces = []
+                    for i in range(len(observedState)):
+                        if observedState[i] == tile:
+                            observedPieces.append(color(i // (numPiece // numPlay), i))
                     else:
-                        SProb = SProb + 1/weights[i]
-                observedPieces = []
-                for i in range(len(observedState)):
-                    if observedState[i] == tile:
-                        observedPieces.append(color(i // (numPiece // numPlay), i))
+                        print(f'The following piece(s) are on tile {tile}: {", ".join(observedPieces)}')
+                    GameState.observation(observedPieces, tile)
+                    phase = 3
                 else:
-                    print(f'The following piece(s) are on tile {tile}: {", ".join(observedPieces)}')
-                GameState.observation(observedPieces, tile)
-                phase = 3
+                    print('\nInvalid position')
         elif phase == 3:
             currentPlayer = currentPlayer + 1
             phase = 0
@@ -340,12 +336,18 @@ def Play():
         if command == 'q':
             break
         if command[0] == 'p':
-            pieceId = int(command[1:])
-            probs = [0]*(boardlen+1)
-            States, weights = GameState.getStates()
-            for i in range(len(States)):
-                probs[States[i][pieceId]] = probs[States[i][pieceId]] + 1/weights[i]
-            print(probs)
+            try:
+                pieceId = int(command[1:])
+            except:
+                pieceId = None
+            if not (pieceId == None) and (0 <= pieceId < numPiece):
+                probs = [0]*(boardlen+1)
+                States, weights = GameState.getStates()
+                for i in range(len(States)):
+                    probs[States[i][pieceId]] = probs[States[i][pieceId]] + 1/weights[i]
+                print(probs)
+            else:
+                print('\nInvalid piece')
         if command == 'states':
             S, w = GameState.getStates()
             print(S)
