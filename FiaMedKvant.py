@@ -319,7 +319,7 @@ class FiaGame:
             States, weights = self.GameState.getStates()
             for i in range(len(States)):
                 probs[States[i][pieceId]] = probs[States[i][pieceId]] + 1/weights[i]
-            return probs
+            return ['{0:.2f}'.format(prob) for prob in probs] # Format numbers to have 2 decimals
         else:
             return -1
 
@@ -364,7 +364,7 @@ class FiaGame:
             observedPieces = []
             for i in range(len(observedState)):
                 if observedState[i] == position:
-                    observedPieces.append(color(i // (numPiece // numPlay), i))
+                    observedPieces.append(color(i // self.piecesPerPlayer, i))
             self.GameState.observation(observedPieces, position)
             if self.GameState.getType() == Node and self.GameState.length() == 1:
                 newState = self.GameState.getLinks()[0]
@@ -378,8 +378,6 @@ class FiaGame:
         return self.GameState.getStates()
 
 def Play():
-    global numPlay
-    global numPiece
     print('Hello! How many players?')
     numPlay = input()
     if numPlay == '':
@@ -468,7 +466,8 @@ def Play():
             if probs == -1:
                 print('\nInvalid piece')
             else:
-                print(probs)
+                print((' '*5).join([str(i) for i in range(boardlen+1)]))
+                print("  ".join(probs))
         if command == 'states':
             S, w = Game.getStates()
             print(S)
