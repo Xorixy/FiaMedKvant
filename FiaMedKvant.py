@@ -364,7 +364,7 @@ class FiaGame:
             observedPieces = []
             for i in range(len(observedState)):
                 if observedState[i] == position:
-                    observedPieces.append(color(i // self.piecesPerPlayer, i))
+                    observedPieces.append(i)
             self.GameState.observation(observedPieces, position)
             if self.GameState.getType() == Node and self.GameState.length() == 1:
                 newState = self.GameState.getLinks()[0]
@@ -447,6 +447,8 @@ def Play():
                 except:
                     tile = None
                 observedPieces = Game.observe(tile)
+                for i in range(len(observedPieces)):
+                    observedPieces[i] = color(i // numPlay, i)
                 if observedPieces != -1:
                     print(f'The following piece(s) are on tile {tile}: {", ".join(observedPieces)}')
                     phase = 3
