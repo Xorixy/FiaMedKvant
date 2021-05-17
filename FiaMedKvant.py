@@ -447,9 +447,9 @@ def Play():
                 except:
                     tile = None
                 observedPieces = Game.observe(tile)
-                for i in range(len(observedPieces)):
-                    observedPieces[i] = color(i // numPlay, i)
                 if observedPieces != -1:
+                    for i in range(len(observedPieces)):
+                        observedPieces[i] = color(observedPieces[i] // numPlay, observedPieces[i])
                     print(f'The following piece(s) are on tile {tile}: {", ".join(observedPieces)}')
                     phase = 3
                 else:
