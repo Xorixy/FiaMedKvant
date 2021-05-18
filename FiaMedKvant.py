@@ -6,7 +6,11 @@ Created on Thu May 13 22:10:24 2021
 """
 
 
-import numpy.random as rnd
+
+import numpy as np
+
+rnd = np.random
+
 
 #         Red           Green         Yellow        Blue          Magenta       Cyan
 colors = ['\u001b[31m', '\u001b[32m', '\u001b[33m', '\u001b[34m', '\u001b[35m', '\u001b[36m']
@@ -15,248 +19,75 @@ colorReset = '\u001b[0m'
 def color(colorIndex, text):
     return colors[colorIndex] + str(text) + colorReset
 
+def primesfrom2to(n):
+    """ Input n>=6, Returns a array of primes, 2 <= p < n """
+    sieve = np.ones(n//3 + (n%6==2), dtype=np.bool)
+    for i in range(1,int(n**0.5)//3+1):
+        if sieve[i]:
+            k=3*i+1|1
+            sieve[       k*k//3     ::2*k] = False
+            sieve[k*(k-2*(i&1)+4)//3::2*k] = False
+    return np.r_[2,3,((3*np.nonzero(sieve)[0][1:]+1)|1)]
 
-class Node:
-    def __init__(self, Connection=None):
-        self.links = []
-        self.NodeType = None
-        if Connection != None:
-            self.addLink(Connection)
+def primes(n):
+    """ Returns a array of primes, 2 <= p < n. If n <= 2, returns None """
+    if n <= 2:
+        return None
+    elif n == 3:
+        return np.array([2])
+    elif n <= 5:
+        return np.array([2,3])
+    elif n == 6:
+        return np.array([2,3,5])
+    else:
+        return primesfrom2to(n)
 
-    def addLink(self, Connection):
-        """Adds either a single connection to the node, or a list of connections.
-        The connections need to all be same as the NodeType, unless the Node is empty.
-        """
-        ConType = type(Connection)
-        if ConType == list:
-            ConType = type(Connection[0])
-            for element in Connection:
-                if ConType != type(element):
-                    raise Exception('Error: Appended connections must all be of same type')
-
-            if self.NodeType == None:
-                if (ConType == Branch) or (ConType == Node):
-                    self.links.extend(Connection)
-                    self.NodeType = ConType
-                else:
-                    raise Exception('Error: Nodes can only connect to branches or other nodes')
-
-            elif (ConType == self.NodeType):
-                self.links.extend(Connection)
-
-            else:
-                raise Exception(f'Error: This list is of type {self.NodeType} not of {ConType}')
-
-        elif self.NodeType == None:
-            if (ConType == Branch) or (ConType == Node):
-                self.links.append(Connection)
-                self.NodeType = ConType
-            else:
-                raise Exception('Error: Nodes can only connect to branches or other nodes')
-
-        elif (ConType == self.NodeType):
-            self.links.append(Connection)
-
-        else:
-            raise Exception('Error: This list is of type {self.NodeType} not of {ConType}')
-
-    def getLinks(self):
-        """
-        Returns a list of the links of the node
-        """
-        return self.links
-
-    def getType(self):
-        """
-        Returns the node type
-        """
-        return self.NodeType
-
-    def removeLink(self, link):
-        """
-        Removes a link from the node
-        """
-        try:
-            self.links.remove(link)
-        except:
-            raise Exception('Error: Not a link of this node')
-
-    def reset(self):
-        """
-        Resets all links and sets NodeType to none
-        """
-        self.links = []
-        self.NodeType = None
-
-    def length(self):
-        """
-        Returns the number of connections this node has, be it branches or other nodes
-        """
-        return len(self.links)
-
-    def totalSize(self, visitedNodes = None):
-        """
-        Returns the total number of all nodes and branches under this one recursively, including itself.
-        """
-        if visitedNodes == None:
-            visitedNodes = [self]
-        else:
-            visitedNodes.append(self)
-        if self.NodeType == None:
-            return 1
-        elif self.NodeType == Branch:
-            return len(self.links) + 1
-        elif self.NodeType == Node:
-            length = 0
-            for link in self.links:
-                if not link in visitedNodes:
-                    length = length + link.totalSize(visitedNodes)
-            return length + 1
-
-    def observation(self, pieceId, position):
-        """
-        Given a list of observed pieces on a position, it passes this information to the nodes
-        or branches under it.
-        If any of its linked nodes/branches return false, (i.e they are not linked to any
-        valid board state) it flags itself for removal and returns false.
-        """
-        removals = []
-        for i in range(len(self.links)):
-            if not self.links[i].observation(pieceId, position):
-                removals.append(self.links[i])
-        for i in range(len(removals)):
-            self.removeLink(removals[i])
-        if len(self.links) == 0:
-            return False
-        else:
-            return True
-
-    def quantumMove(self, pieceId, maxMove):
-        """
-        Given a pieceId and the maximum steps it took, it sends this information
-        down to its linked nodes/branches.
-        Any daughter branches are then replaced by nodes linking to the new branches
-        coresponding to the new states.
-        """
-        if self.NodeType == Node:
-            for element in self.links:
-                element.quantumMove(pieceId, maxMove)
-        elif self.NodeType == Branch:
-            newNodes = [0]*len(self.links)
-            for i in range(len(self.links)):
-                newNodes[i] = self.links[i].quantumMove(pieceId, maxMove)
-            self.reset()
-            self.addLink(newNodes)
-
-    def getStates(self):
-        """
-        Returns all linked states under this node and their weights.
-        Also multiplies all weights by the number of links the node has.
-        """
-        bStates = []
-        weights = []
-        for element in self.links:
-            elementStates, elementWeights = element.getStates()
-            bStates.extend(elementStates)
-            weights.extend(elementWeights)
-        for i in range(len(weights)):
-            weights[i] = weights[i]*len(self.links)
-        return bStates, weights
-
-
-class Branch:
-    def __init__(self, board=None):
-        if board != None:
-            self.setBoard(board)
-
-    def setBoard(self, board):
-        self.board = board
-
-    def getBoard(self):
-        return self.board
-
-    def quantumMove(self, pieceId, maxMove):
-        newBranches = [0]*maxMove
-        for i in range(maxMove):
-            newBoard = self.board.getCopy()
-            #print(newBoard.getState())
-            newBoard.movePiece(pieceId, i+1)
-            newBranches[i] = Branch(newBoard)
-        return Node(newBranches)
-
-    def observation(self, pieceId, position):
-        return self.board.observation(pieceId, position)
-
-    def getStates(self):
-        return [self.board.getState()], [1]
-
-class BoardState:
-    def __init__(self, boardLength=None, numOfPieces=None, numOfTeams=None, state = None):
-        if boardLength == None:
-            boardLength = 10
-        if numOfPieces == None:
-           numOfPieces = 2
-        if numOfTeams == None:
-            numOfTeams = 2
-
-        self.boardLength = boardLength
-        self.pieceCount = numOfPieces
-        self.playerCount = numOfTeams
-
-        if self.pieceCount % self.playerCount != 0:
-            raise Exception('Error: Number of players must divide number of pieces!')
-
-        self.bState = [0]*self.pieceCount
-        if state != None:
-            self.bState = state
-
-
-    def getCopy(self):
-        return BoardState(self.boardLength, self.pieceCount, self.playerCount, self.bState[:])
-
-    def getState(self):
-        return self.bState
-
-    def setState(self, board):
-        self.bState = board
-
-    def movePiece(self, pieceId, step):
-        team = (pieceId - pieceId%(self.pieceCount//self.playerCount))//(self.pieceCount//self.playerCount)
-        if self.bState[pieceId] <= self.boardLength - step:
-            self.bState[pieceId] = self.bState[pieceId] + step
-            if self.bState[pieceId] != self.boardLength:
-                for i in range(self.pieceCount):
-                    if (i - i%(self.pieceCount//self.playerCount))//(self.pieceCount//self.playerCount) != team:
-                        if self.bState[i] == self.bState[pieceId]:
-                            self.bState[i] = 0
-
-        #pieceId is a number 0, 1, ...
-        #Each player has n = pieceCount/playerCount pcs
-        #pieces 0, 1, ... , n - 1 belong to player 1,
-        #pieces n,  n + 1, ... , 2n - 1 to player 2 and so on
-        #If a piece lands on a space occupied by a piece from another player,
-        #the other piece gets knocked off the board and goes back to start
-
-    def observation(self, pieceId, position):
-        piecesOnPosition = []
-        for i in range(len(self.bState)):
-            if self.bState[i] == position:
-                piecesOnPosition.append(i)
-        if sorted(piecesOnPosition) == sorted(pieceId):
-            return True
-        else:
-            return False
-
+def findPrimeFactors(n):
+    """Returns an array with all the prime factors of a positive number n"""
+    if n < 1:
+        raise Exception('Error. Number must be a positive integer to find its prime factors')
+    elif n == 1:
+        return None
+    elif n == 2:
+        return [2]
+    elif n == 3:
+        return [3]
+    else:
+        
+        #If n itself is not a prime, it must be divisible by at least one prime <= sqrt(n)
+        potentialPrimes = primes(int(np.sqrt(n))+1)
+        primeFactors = []
+        
+        #Find all prime factors of n <= sqrt(n)
+        for prime in potentialPrimes:
+            if n%prime == 0:
+                primeFactors.append(prime)
+                
+                #In order to simplify later calculations, we remove all powers of a found prime
+                while(n%prime == 0):
+                    n = n//prime
+        #We have only found the prime factors of n that are <= sqrt(n)
+        #There might be ONE factor (without powers) other greater than sqrt(n)
+        #However, since we divided out all other prime factors from our n, thus either
+        #n = 1, or n = prime that divided the first n
+        #Thus in this case, if n != 1 we add it to the list
+        if n != 1:
+            primeFactors.append(n)
+        return primeFactors
+        
+        
+        
 
 class FiaGame:
-    def __init__(self, numPlay=None, piecesPerPlayer=None, boardLength=None, maxRoll=None):
+    def __init__(self, numPlay=None, piecesPerPlayer=None, boardLength=None, maxRoll=None, dataType = 'int'):
         """
         Initialises a new game instance of Fia med kvant.
         The playing variables can either be left as default or be specfied by the user,
         with checks that only proper values are used (i.e the pieces per player must be greater than one and so on)
         """
+        
         if numPlay == None:
-            self.numPlay = 2
+            numPlay = self.numPlay = 2
         if type(numPlay) != int or numPlay < 2:
             raise Exception('Error, number of players must either be left as default or be an integer greater than one')
         else:
@@ -265,6 +96,7 @@ class FiaGame:
 
         if piecesPerPlayer == None:
             self.numPiece = 2*numPlay
+            piecesPerPlayer = 2
         if type(piecesPerPlayer) != int or piecesPerPlayer < 1:
             raise Exception('Error, pieces per player must either be left as default or be an integer greater than zero')
         else:
@@ -273,7 +105,7 @@ class FiaGame:
 
 
         if boardLength == None:
-            self.boardLength = 10
+            boardLength = self.boardLength = 10
         if type(boardLength) != int or boardLength < 1:
             raise Exception('Error, board length must either be left as default or be an integer greater than zero')
         else:
@@ -281,15 +113,17 @@ class FiaGame:
 
 
         if maxRoll == None:
-            self.maxRoll = 6
+            maxRoll = self.maxRoll = 6
         if type(maxRoll) != int or maxRoll < 1:
             raise Exception('Error, maximum roll must either be left as default or be an integer greater than zero')
         else:
             self.maxRoll = maxRoll
 
-
-
-        self.GameState = Node(Branch(BoardState(self.boardLength, self.numPiece, self.numPlay)))
+        #self.dataType = dataType
+        self.dataType = 'int'
+        initialBoard = [0]*self.numPiece
+        self.gameState = {tuple(initialBoard):1}
+        self.totalWeight = 1
 
 
 
@@ -298,7 +132,7 @@ class FiaGame:
         Returns the game parameters:
         Number of players, number of pieces, boardlength and maximum roll
         """
-        return self.numPlay, self.numPiece, self.boardLength, self.maxRoll
+        return self.numPlay, self.numPiece, self.boardLength, self.maxRoll, self.dataType
 
 
     def roll(self):
@@ -309,73 +143,179 @@ class FiaGame:
         return value
 
 
-    def getProbabilities(self, pieceId):
-        """
-        Returns the probabilities of the position of the piece with a given ID
-        If given an invalid ID, returns -1
-        """
-        if type(pieceId) == int and (0 <= pieceId < self.numPiece):
-            probs = [0]*(self.boardLength+1)
-            States, weights = self.GameState.getStates()
-            for i in range(len(States)):
-                probs[States[i][pieceId]] = probs[States[i][pieceId]] + 1/weights[i]
-            return ['{0:.2f}'.format(prob) for prob in probs] # Format numbers to have 2 decimals
-        else:
-            return -1
-
+    def getProbabilities(self):
+        if self.dataType == 'int':
+            probabilities = np.zeros([self.numPiece, self.boardLength+1])
+            for boardState in self.gameState:
+                for i in range(self.numPiece):
+                    probabilities[i][boardState[i]] = probabilities[i][boardState[i]] + self.gameState[boardState]/self.totalWeight
+            return probabilities
+                    
 
     def quantumMove(self, pieceId, maxMove):
-        """
-        Performs a quantum move of a piece up to the number of steps specified
-        If the move was performed, returns 0
-        If an invalid piece is given, returns -1
-        If an invalid number of steps is given, returns -2
-        If both are invalid, returns -3
-        """
-        returnVal = -3
-        validID = False
-        validMaxMove = False
-        if type(pieceId) == int and 0 <= pieceId < self.numPiece:
-            validID = True
-            returnVal = returnVal + 1
-        if type(maxMove) == int and maxMove > 0:
-            validMaxMove = True
-            returnVal = returnVal + 2
-
-        if validID and validMaxMove:
-            self.GameState.quantumMove(pieceId, maxMove)
-        return returnVal
-
-    def observe(self, position):
-        """
-        Observes a certain position, returns an array with all pieces on the position
-        If the given position is invalid, returns -1
-        """
-        if type(position) == int and 0 <= position <= self.boardLength:
-            RandRoll = rnd.random()
-            SProb = 0
-            States, weights = self.GameState.getStates()
-            for i in range(len(States)):
-                if SProb <= RandRoll <= SProb + 1/weights[i]:
-                    observedState = States[i]
-                    break
+        if self.dataType == 'int':
+            #Dict with the new boards
+            newGameState = {}
+            
+            #Every old board state creates maxMove new board states with the same weight
+            #Thus, the total weight is simply multiplied by maxMove
+            self.totalWeight = self.totalWeight*maxMove
+            #We need to perform all possible steps for all possible gamestates
+            for oldBoard in self.gameState:
+                for step in range(1, maxMove+1):
+                    
+                    #For each old board and each possible step, we calculate the resulting new board
+                    newBoard = self.normalMove(oldBoard, pieceId, step)
+                    
+                    #If the resulting boardstate is not part of the new states, we simply add
+                    #it with the same weight as the old state:
+                    if newBoard not in newGameState:
+                        newGameState[newBoard] = self.gameState[oldBoard]
+                    
+                    #Otherwise, we add the weight of the old board to the resulting board in the new states
+                    else:
+                        newGameState[newBoard] = newGameState[newBoard] + self.gameState[oldBoard]
+            
+            
+            #After all new states are calculated, we set them to be the current game state,
+            #then we shorten the weights
+            self.gameState = newGameState
+            self.shortenWeights()
+            return 0
+        
+        
+        
+        
+        
+    def observeTile(self, position):
+        if self.dataType == 'int':
+            #First, we have to choose a state based on it's weight and get the pieces on its position
+            chosenState = None
+            #We generate a number between 1-totalWeight
+            if self.totalWeight > 1:
+                ProbNumber = rnd.randint(1,self.totalWeight)
+            else:
+                ProbNumber = 1
+            for boardState in self.gameState:
+                #If this number is greater than the current weight, we make the number smaller by weight
+                if ProbNumber > self.gameState[boardState]:
+                    ProbNumber = ProbNumber - self.gameState[boardState]
+                #Else, this is the randomly chosen state!
                 else:
-                    SProb = SProb + 1/weights[i]
+                    chosenState = boardState
+                    break;
+            
+            #Some error handling in case the total weights are whack
+            if chosenState == None:
+                raise Exception('Error: Total weights should be the sum of all weights, something is wrong')
+            
+            #We now extract the observed pieces
             observedPieces = []
-            for i in range(len(observedState)):
-                if observedState[i] == position:
+            for i in range(len(chosenState)):
+                if chosenState[i] == position:
                     observedPieces.append(i)
-            self.GameState.observation(observedPieces, position)
-            if self.GameState.getType() == Node and self.GameState.length() == 1:
-                newState = self.GameState.getLinks()[0]
-                del self.GameState
-                self.GameState = newState
+            
+            #Now we have to remove all states that do not match this observation
+            self.makeObservation(observedPieces, position)
             return observedPieces
-        else:
-            return -1
+        
+        
+        
+        
+        
+    def shortenWeights(self):
+        """For integer data types, it might be wise to divide all the weights by their largest common
+            denominator to shorten them"""
+        if self.dataType == 'int':
+            
+            #First, find the smallest of all weights
+            smallestWeight = np.inf
+            for boardState in self.gameState:
+                if self.gameState[boardState] < smallestWeight:
+                    smallestWeight = self.gameState[boardState]
+            
+            
+            #Now we find all the prime numbers that divide this smallest weight
+            #If the smallest weight is one, then obviously the weights are minimal
+            if smallestWeight != 1:
+                dividingPrimes = findPrimeFactors(smallestWeight)
+            else:
+                dividingPrimes = []
+            for boardState in self.gameState:
+                
+                #If there are no primes that divide all previous looked at weights,
+                #the weights are already minimal, no point in conitnuing
+                if dividingPrimes == []:
+                    break
+                
+                #Else we check after bad primes, i.e primes that divide the smallest weight but not
+                #this one (and thus per definition can't divide every weight)
+                badPrimes = []
+                for prime in dividingPrimes:
+                    if self.gameState[boardState]%prime != 0:
+                        badPrimes.append(prime)
+                        
+                #We then remove the bad primes from possible divisors
+                for badPrime in badPrimes:
+                    dividingPrimes.remove(badPrime)
+                    
+            #If no primes divide the weights, they are already minimal.
+            #Else we divide them by the common primes, and run the algorithm again
+            #since we might have powers of primes that divide
+            if dividingPrimes != []:
+                commonFactor = 1
+                for prime in dividingPrimes:
+                    commonFactor = commonFactor*prime
+                for boardState in self.gameState:
+                    self.gameState[boardState] = self.gameState[boardState]//commonFactor
+                self.totalWeight = self.totalWeight//commonFactor
+                self.shortenWeights()
+            
+    def normalMove(self, boardTuple, pieceId, step):
+        """"Takes a single board and performs a normal fia move"""
+        #We want to be able to edit the board state
+        board = list(boardTuple)
+        
+        #In order to win, one must roll exactly the right roll
+        if board[pieceId] + step <= self.boardLength:
+            board[pieceId] = board[pieceId] + step
+            
+            #Now, if the piece is not at the end, we check if it has squashed another piece:
+            #Remember, with n pieces per player, player number i has the pieces
+            #i, i+1, i+2, ..., i+n-1
+            #Thus, the piece with id K belongs to the player with id
+            #(K - K%n)/n
+            if board[pieceId] != self.boardLength:
+                movingPlayerId = (pieceId - pieceId%self.piecesPerPlayer)//self.piecesPerPlayer
+                for i in range(len(board)):
+                    standingPlayerId = (i - i%self.piecesPerPlayer)//self.piecesPerPlayer
+                    if (board[i] == board[pieceId]) and (movingPlayerId != standingPlayerId):
+                        board[i] = 0
+        return tuple(board)
 
-    def getStates(self):
-        return self.GameState.getStates()
+    def makeObservation(self, pieceIds, position):
+        """Removes any states that do not have the given pieces on the given position"""
+        removedStates = []
+        
+        #First, find the boardStates that don't match the observation and subtract their weights from the weight total
+        for boardState in self.gameState:
+            for i in range(len(boardState)):
+                if (i in pieceIds and boardState[i] != position) or (i not in pieceIds and boardState[i] == position):
+                    removedStates.append(boardState)
+                    self.totalWeight = self.totalWeight - self.gameState[boardState]
+        
+        
+        #Now, remove them 
+
+        for i in range(len(removedStates)):
+            del self.gameState[removedStates[i]]
+        
+        #Lastly, shorten the weights
+        self.shortenWeights()
+            
+        
+
+        
 
 def Play():
     print('Hello! How many players?')
@@ -446,7 +386,7 @@ def Play():
                     tile = int(command[1:])
                 except:
                     tile = None
-                observedPieces = Game.observe(tile)
+                observedPieces = Game.observeTile(tile)
                 if observedPieces != -1:
                     for i in range(len(observedPieces)):
                         observedPieces[i] = color(observedPieces[i] // numPlay, observedPieces[i])
@@ -462,6 +402,8 @@ def Play():
         if command == 'q':
             break
         if command[0] == 'p':
+            print(Game.getProbabilities())
+            """
             if command == 'p':
                 piecesId = range(Game.numPiece)
             else:
@@ -476,10 +418,9 @@ def Play():
                     print(color(piece // Game.piecesPerPlayer, f'{piece}:'.ljust(len(str(Game.numPiece))+2) + '  '.join(probs)))
             else:
                 print('\nInvalid piece')
+            """
         if command == 'states':
-            S, w = Game.getStates()
-            print(S)
-            print(w)
+            print(Game.gameState)
 
 
 if __name__ == "__main__":
