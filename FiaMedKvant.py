@@ -241,35 +241,36 @@ class FiaGame:
                 dividingPrimes = findPrimeFactors(smallestWeight)
             else:
                 dividingPrimes = []
-            for boardState in self.gameState:
-                
-                #If there are no primes that divide all previous looked at weights,
-                #the weights are already minimal, no point in conitnuing
-                if dividingPrimes == []:
-                    break
-                
-                #Else we check after bad primes, i.e primes that divide the smallest weight but not
-                #this one (and thus per definition can't divide every weight)
-                badPrimes = []
-                for prime in dividingPrimes:
-                    if self.gameState[boardState]%prime != 0:
-                        badPrimes.append(prime)
-                        
-                #We then remove the bad primes from possible divisors
-                for badPrime in badPrimes:
-                    dividingPrimes.remove(badPrime)
-                    
-            #If no primes divide the weights, they are already minimal.
-            #Else we divide them by the common primes, and run the algorithm again
-            #since we might have powers of primes that divide
-            if dividingPrimes != []:
-                commonFactor = 1
-                for prime in dividingPrimes:
-                    commonFactor = commonFactor*prime
+            #We need to loop multiple times in order to check for higher powers of the primes
+            while(dividingPrimes != []):
                 for boardState in self.gameState:
-                    self.gameState[boardState] = self.gameState[boardState]//commonFactor
-                self.totalWeight = self.totalWeight//commonFactor
-                self.shortenWeights()
+                    
+                    #If there are no primes that divide all previous looked at weights,
+                    #the weights are already minimal, no point in conitnuing
+                    if dividingPrimes == []:
+                        break
+                    
+                    #Else we check after bad primes, i.e primes that divide the smallest weight but not
+                    #this one (and thus per definition can't divide every weight)
+                    badPrimes = []
+                    for prime in dividingPrimes:
+                        if self.gameState[boardState]%prime != 0:
+                            badPrimes.append(prime)
+                            
+                    #We then remove the bad primes from possible divisors
+                    for badPrime in badPrimes:
+                        dividingPrimes.remove(badPrime)
+                        
+                #If no primes divide the weights, they are already minimal.
+                #Else we divide them by the common primes, and check againg
+                #since we might have powers of primes that divide
+                if dividingPrimes != []:
+                    commonFactor = 1
+                    for prime in dividingPrimes:
+                        commonFactor = commonFactor*prime
+                    for boardState in self.gameState:
+                        self.gameState[boardState] = self.gameState[boardState]//commonFactor
+                    self.totalWeight = self.totalWeight//commonFactor
             
     def normalMove(self, boardTuple, pieceId, step):
         """"Takes a single board and performs a normal fia move"""
@@ -306,7 +307,6 @@ class FiaGame:
                     break
         
         #Now, remove them 
-
         for i in range(len(removedStates)):
             del self.gameState[removedStates[i]]
         
@@ -402,8 +402,7 @@ def Play():
         if command == 'q':
             break
         if command[0] == 'p':
-            print(Game.getProbabilities())
-            """
+            
             if command == 'p':
                 piecesId = range(Game.numPiece)
             else:
@@ -412,13 +411,15 @@ def Play():
                 except:
                     piecesId = None
             if piecesId is not None:
+                probabilities = Game.getProbabilities()
                 print(' '*(len(str(Game.numPiece))+2) + (' '*5).join([str(i) for i in range(boardlen+1)]))
                 for piece in piecesId:
-                    probs = Game.getProbabilities(piece)
-                    print(color(piece // Game.piecesPerPlayer, f'{piece}:'.ljust(len(str(Game.numPiece))+2) + '  '.join(probs)))
+                    #probs = Game.getProbabilities(piece)
+                    probs = probabilities[piece]
+                    print(color(piece // Game.piecesPerPlayer, f'{piece}:'.ljust(len(str(Game.numPiece))+2) + '  '.join([str(round(probs[i],2)*100) for i in range(boardlen+1)])))
             else:
                 print('\nInvalid piece')
-            """
+
         if command == 'states':
             print(Game.gameState)
 
