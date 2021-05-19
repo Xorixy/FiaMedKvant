@@ -303,7 +303,7 @@ class FiaGame:
                 if (i in pieceIds and boardState[i] != position) or (i not in pieceIds and boardState[i] == position):
                     removedStates.append(boardState)
                     self.totalWeight = self.totalWeight - self.gameState[boardState]
-        
+                    break
         
         #Now, remove them 
 
