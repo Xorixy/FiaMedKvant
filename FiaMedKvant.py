@@ -53,16 +53,16 @@ def findPrimeFactors(n):
     elif n == 3:
         return [3]
     else:
-        
+
         #If n itself is not a prime, it must be divisible by at least one prime <= sqrt(n)
         potentialPrimes = primes(int(np.sqrt(n))+1)
         primeFactors = []
-        
+
         #Find all prime factors of n <= sqrt(n)
         for prime in potentialPrimes:
             if n%prime == 0:
                 primeFactors.append(prime)
-                
+
                 #In order to simplify later calculations, we remove all powers of a found prime
                 while(n%prime == 0):
                     n = n//prime
@@ -74,9 +74,9 @@ def findPrimeFactors(n):
         if n != 1:
             primeFactors.append(n)
         return primeFactors
-        
-        
-        
+
+
+
 
 class FiaGame:
     def __init__(self, numPlay=None, piecesPerPlayer=None, boardLength=None, maxRoll=None, dataType = 'int'):
@@ -85,7 +85,7 @@ class FiaGame:
         The playing variables can either be left as default or be specfied by the user,
         with checks that only proper values are used (i.e the pieces per player must be greater than one and so on)
         """
-        
+
         if numPlay == None:
             numPlay = self.numPlay = 2
         if type(numPlay) != int or numPlay < 2:
@@ -150,43 +150,43 @@ class FiaGame:
                 for i in range(self.numPiece):
                     probabilities[i][boardState[i]] = probabilities[i][boardState[i]] + self.gameState[boardState]/self.totalWeight
             return probabilities
-                    
+
 
     def quantumMove(self, pieceId, maxMove):
         if self.dataType == 'int':
             #Dict with the new boards
             newGameState = {}
-            
+
             #Every old board state creates maxMove new board states with the same weight
             #Thus, the total weight is simply multiplied by maxMove
             self.totalWeight = self.totalWeight*maxMove
             #We need to perform all possible steps for all possible gamestates
             for oldBoard in self.gameState:
                 for step in range(1, maxMove+1):
-                    
+
                     #For each old board and each possible step, we calculate the resulting new board
                     newBoard = self.normalMove(oldBoard, pieceId, step)
-                    
+
                     #If the resulting boardstate is not part of the new states, we simply add
                     #it with the same weight as the old state:
                     if newBoard not in newGameState:
                         newGameState[newBoard] = self.gameState[oldBoard]
-                    
+
                     #Otherwise, we add the weight of the old board to the resulting board in the new states
                     else:
                         newGameState[newBoard] = newGameState[newBoard] + self.gameState[oldBoard]
-            
-            
+
+
             #After all new states are calculated, we set them to be the current game state,
             #then we shorten the weights
             self.gameState = newGameState
             self.shortenWeights()
             return 0
-        
-        
-        
-        
-        
+
+
+
+
+
     def observeTile(self, position):
         if self.dataType == 'int':
             #First, we have to choose a state based on it's weight and get the pieces on its position
@@ -203,38 +203,38 @@ class FiaGame:
                 #Else, this is the randomly chosen state!
                 else:
                     chosenState = boardState
-                    break;
-            
+                    break
+
             #Some error handling in case the total weights are whack
             if chosenState == None:
                 raise Exception('Error: Total weights should be the sum of all weights, something is wrong')
-            
+
             #We now extract the observed pieces
             observedPieces = []
             for i in range(len(chosenState)):
                 if chosenState[i] == position:
                     observedPieces.append(i)
-            
+
             #Now we have to remove all states that do not match this observation
             self.makeObservation(observedPieces, position)
             return observedPieces
-        
-        
-        
-        
-        
+
+
+
+
+
     def shortenWeights(self):
         """For integer data types, it might be wise to divide all the weights by their largest common
             denominator to shorten them"""
         if self.dataType == 'int':
-            
+
             #First, find the smallest of all weights
             smallestWeight = np.inf
             for boardState in self.gameState:
                 if self.gameState[boardState] < smallestWeight:
                     smallestWeight = self.gameState[boardState]
-            
-            
+
+
             #Now we find all the prime numbers that divide this smallest weight
             #If the smallest weight is one, then obviously the weights are minimal
             if smallestWeight != 1:
@@ -244,23 +244,23 @@ class FiaGame:
             #We need to loop multiple times in order to check for higher powers of the primes
             while(dividingPrimes != []):
                 for boardState in self.gameState:
-                    
+
                     #If there are no primes that divide all previous looked at weights,
                     #the weights are already minimal, no point in conitnuing
                     if dividingPrimes == []:
                         break
-                    
+
                     #Else we check after bad primes, i.e primes that divide the smallest weight but not
                     #this one (and thus per definition can't divide every weight)
                     badPrimes = []
                     for prime in dividingPrimes:
                         if self.gameState[boardState]%prime != 0:
                             badPrimes.append(prime)
-                            
+
                     #We then remove the bad primes from possible divisors
                     for badPrime in badPrimes:
                         dividingPrimes.remove(badPrime)
-                        
+
                 #If no primes divide the weights, they are already minimal.
                 #Else we divide them by the common primes, and check againg
                 #since we might have powers of primes that divide
@@ -271,16 +271,16 @@ class FiaGame:
                     for boardState in self.gameState:
                         self.gameState[boardState] = self.gameState[boardState]//commonFactor
                     self.totalWeight = self.totalWeight//commonFactor
-            
+
     def normalMove(self, boardTuple, pieceId, step):
         """"Takes a single board and performs a normal fia move"""
         #We want to be able to edit the board state
         board = list(boardTuple)
-        
+
         #In order to win, one must roll exactly the right roll
         if board[pieceId] + step <= self.boardLength:
             board[pieceId] = board[pieceId] + step
-            
+
             #Now, if the piece is not at the end, we check if it has squashed another piece:
             #Remember, with n pieces per player, player number i has the pieces
             #i, i+1, i+2, ..., i+n-1
@@ -297,7 +297,7 @@ class FiaGame:
     def makeObservation(self, pieceIds, position):
         """Removes any states that do not have the given pieces on the given position"""
         removedStates = []
-        
+
         #First, find the boardStates that don't match the observation and subtract their weights from the weight total
         for boardState in self.gameState:
             for i in range(len(boardState)):
@@ -305,17 +305,17 @@ class FiaGame:
                     removedStates.append(boardState)
                     self.totalWeight = self.totalWeight - self.gameState[boardState]
                     break
-        
-        #Now, remove them 
+
+        #Now, remove them
         for i in range(len(removedStates)):
             del self.gameState[removedStates[i]]
-        
+
         #Lastly, shorten the weights
         self.shortenWeights()
-            
-        
 
-        
+
+
+
 
 def Play():
     print('Hello! How many players?')
@@ -402,7 +402,7 @@ def Play():
         if command == 'q':
             break
         if command[0] == 'p':
-            
+
             if command == 'p':
                 piecesId = range(Game.numPiece)
             else:
@@ -416,7 +416,7 @@ def Play():
                 for piece in piecesId:
                     #probs = Game.getProbabilities(piece)
                     probs = probabilities[piece]
-                    print(color(piece // Game.piecesPerPlayer, f'{piece}:'.ljust(len(str(Game.numPiece))+2) + '  '.join([str(round(probs[i],2)*100) for i in range(boardlen+1)])))
+                    print(color(piece // Game.piecesPerPlayer, f'{piece}:'.ljust(len(str(Game.numPiece))+2) + ' '.join([str(round(probs[i],2)*100).ljust(5) for i in range(boardlen+1)])))
             else:
                 print('\nInvalid piece')
 
