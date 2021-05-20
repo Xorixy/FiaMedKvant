@@ -19,63 +19,25 @@ colorReset = '\u001b[0m'
 def color(colorIndex, text):
     return colors[colorIndex] + str(text) + colorReset
 
-def primesfrom2to(n):
-    """ Input n>=6, Returns a array of primes, 2 <= p < n """
-    sieve = np.ones(n//3 + (n%6==2), dtype=np.bool)
-    for i in range(1,int(n**0.5)//3+1):
-        if sieve[i]:
-            k=3*i+1|1
-            sieve[       k*k//3     ::2*k] = False
-            sieve[k*(k-2*(i&1)+4)//3::2*k] = False
-    return np.r_[2,3,((3*np.nonzero(sieve)[0][1:]+1)|1)]
+def findGCDTwoVals(a, b):
+    """
+    Implements the Euclidean algorithm for finding the greatest common denominator of two integers
+    """
+    while(b != 0):
+        a, b = b, a % b
 
-def primes(n):
-    """ Returns a array of primes, 2 <= p < n. If n <= 2, returns None """
-    if n <= 2:
-        return None
-    elif n == 3:
-        return np.array([2])
-    elif n <= 5:
-        return np.array([2,3])
-    elif n == 6:
-        return np.array([2,3,5])
-    else:
-        return primesfrom2to(n)
+    return a
 
-def findPrimeFactors(n):
-    """Returns an array with all the prime factors of a positive number n"""
-    if n < 1:
-        raise Exception('Error. Number must be a positive integer to find its prime factors')
-    elif n == 1:
-        return None
-    elif n == 2:
-        return [2]
-    elif n == 3:
-        return [3]
-    else:
+def findGCD(A):
+    """
+    Finds the greatest common denominator of all integers in an array
+    """
+    gcd = A[0]
 
-        #If n itself is not a prime, it must be divisible by at least one prime <= sqrt(n)
-        potentialPrimes = primes(int(np.sqrt(n))+1)
-        primeFactors = []
+    for i in range(1, len(A)):
+        gcd = findGCDTwoVals(gcd, A[i])
 
-        #Find all prime factors of n <= sqrt(n)
-        for prime in potentialPrimes:
-            if n%prime == 0:
-                primeFactors.append(prime)
-
-                #In order to simplify later calculations, we remove all powers of a found prime
-                while(n%prime == 0):
-                    n = n//prime
-        #We have only found the prime factors of n that are <= sqrt(n)
-        #There might be ONE factor (without powers) other greater than sqrt(n)
-        #However, since we divided out all other prime factors from our n, thus either
-        #n = 1, or n = prime that divided the first n
-        #Thus in this case, if n != 1 we add it to the list
-        if n != 1:
-            primeFactors.append(n)
-        return primeFactors
-
-
+    return gcd
 
 
 class FiaGame:
@@ -189,7 +151,7 @@ class FiaGame:
 
     def observeTile(self, position):
         if self.dataType == 'int':
-            #First, we have to choose a state based on it's weight and get the pieces on its position
+            #First, we have to choose a state based on its weight and get the pieces on its position
             chosenState = None
             #We generate a number between 1-totalWeight
             if self.totalWeight > 1:
@@ -219,58 +181,21 @@ class FiaGame:
             self.makeObservation(observedPieces, position)
             return observedPieces
 
+    # myDict = {'a': 12, 'b': 2, 'c': 120, 'd': 14, 'e': 16}
 
+    # gcd = findGCD(list(myDict.values()))
 
+    # myDict = {k: v // gcd for k, v in myDict.items()}
 
 
     def shortenWeights(self):
         """For integer data types, it might be wise to divide all the weights by their largest common
             denominator to shorten them"""
         if self.dataType == 'int':
+            gcd = findGCD(list(self.gameState.values()))
 
-            #First, find the smallest of all weights
-            smallestWeight = np.inf
-            for boardState in self.gameState:
-                if self.gameState[boardState] < smallestWeight:
-                    smallestWeight = self.gameState[boardState]
+            self.gameState = {key: value // gcd for key, value in self.gameState.items()}
 
-
-            #Now we find all the prime numbers that divide this smallest weight
-            #If the smallest weight is one, then obviously the weights are minimal
-            if smallestWeight != 1:
-                dividingPrimes = findPrimeFactors(smallestWeight)
-            else:
-                dividingPrimes = []
-            #We need to loop multiple times in order to check for higher powers of the primes
-            while(dividingPrimes != []):
-                for boardState in self.gameState:
-
-                    #If there are no primes that divide all previous looked at weights,
-                    #the weights are already minimal, no point in conitnuing
-                    if dividingPrimes == []:
-                        break
-
-                    #Else we check after bad primes, i.e primes that divide the smallest weight but not
-                    #this one (and thus per definition can't divide every weight)
-                    badPrimes = []
-                    for prime in dividingPrimes:
-                        if self.gameState[boardState]%prime != 0:
-                            badPrimes.append(prime)
-
-                    #We then remove the bad primes from possible divisors
-                    for badPrime in badPrimes:
-                        dividingPrimes.remove(badPrime)
-
-                #If no primes divide the weights, they are already minimal.
-                #Else we divide them by the common primes, and check againg
-                #since we might have powers of primes that divide
-                if dividingPrimes != []:
-                    commonFactor = 1
-                    for prime in dividingPrimes:
-                        commonFactor = commonFactor*prime
-                    for boardState in self.gameState:
-                        self.gameState[boardState] = self.gameState[boardState]//commonFactor
-                    self.totalWeight = self.totalWeight//commonFactor
 
     def normalMove(self, boardTuple, pieceId, step):
         """"Takes a single board and performs a normal fia move"""
