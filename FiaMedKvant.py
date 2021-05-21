@@ -17,7 +17,7 @@ colors = ['\u001b[31m', '\u001b[32m', '\u001b[33m', '\u001b[34m', '\u001b[35m', 
 colorReset = '\u001b[0m'
 
 def color(colorIndex, text):
-    return colors[colorIndex] + str(text) + colorReset
+    return colors[colorIndex % len(colors)] + str(text) + colorReset
 
 def findGCDTwoVals(a, b):
     """
@@ -119,27 +119,27 @@ class FiaGame:
             if (0 < pieceId < self.numPiece) and (maxMove >= 1):
                 #Dict with the new boards
                 newGameState = {}
-    
+
                 #Every old board state creates maxMove new board states with the same weight
                 #Thus, the total weight is simply multiplied by maxMove
                 self.totalWeight = self.totalWeight*maxMove
                 #We need to perform all possible steps for all possible gamestates
                 for oldBoard in self.gameState:
                     for step in range(1, maxMove+1):
-    
+
                         #For each old board and each possible step, we calculate the resulting new board
                         newBoard = self.normalMove(oldBoard, pieceId, step)
-    
+
                         #If the resulting boardstate is not part of the new states, we simply add
                         #it with the same weight as the old state:
                         if newBoard not in newGameState:
                             newGameState[newBoard] = self.gameState[oldBoard]
-    
+
                         #Otherwise, we add the weight of the old board to the resulting board in the new states
                         else:
                             newGameState[newBoard] = newGameState[newBoard] + self.gameState[oldBoard]
-    
-    
+
+
                 #After all new states are calculated, we set them to be the current game state,
                 #then we shorten the weights
                 self.gameState = newGameState
