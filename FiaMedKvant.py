@@ -116,34 +116,37 @@ class FiaGame:
 
     def quantumMove(self, pieceId, maxMove):
         if self.dataType == 'int':
-            #Dict with the new boards
-            newGameState = {}
-
-            #Every old board state creates maxMove new board states with the same weight
-            #Thus, the total weight is simply multiplied by maxMove
-            self.totalWeight = self.totalWeight*maxMove
-            #We need to perform all possible steps for all possible gamestates
-            for oldBoard in self.gameState:
-                for step in range(1, maxMove+1):
-
-                    #For each old board and each possible step, we calculate the resulting new board
-                    newBoard = self.normalMove(oldBoard, pieceId, step)
-
-                    #If the resulting boardstate is not part of the new states, we simply add
-                    #it with the same weight as the old state:
-                    if newBoard not in newGameState:
-                        newGameState[newBoard] = self.gameState[oldBoard]
-
-                    #Otherwise, we add the weight of the old board to the resulting board in the new states
-                    else:
-                        newGameState[newBoard] = newGameState[newBoard] + self.gameState[oldBoard]
-
-
-            #After all new states are calculated, we set them to be the current game state,
-            #then we shorten the weights
-            self.gameState = newGameState
-            self.shortenWeights()
-            return 0
+            if (0 < pieceId < self.numPiece) and (maxMove >= 1):
+                #Dict with the new boards
+                newGameState = {}
+    
+                #Every old board state creates maxMove new board states with the same weight
+                #Thus, the total weight is simply multiplied by maxMove
+                self.totalWeight = self.totalWeight*maxMove
+                #We need to perform all possible steps for all possible gamestates
+                for oldBoard in self.gameState:
+                    for step in range(1, maxMove+1):
+    
+                        #For each old board and each possible step, we calculate the resulting new board
+                        newBoard = self.normalMove(oldBoard, pieceId, step)
+    
+                        #If the resulting boardstate is not part of the new states, we simply add
+                        #it with the same weight as the old state:
+                        if newBoard not in newGameState:
+                            newGameState[newBoard] = self.gameState[oldBoard]
+    
+                        #Otherwise, we add the weight of the old board to the resulting board in the new states
+                        else:
+                            newGameState[newBoard] = newGameState[newBoard] + self.gameState[oldBoard]
+    
+    
+                #After all new states are calculated, we set them to be the current game state,
+                #then we shorten the weights
+                self.gameState = newGameState
+                self.shortenWeights()
+                return 0
+            else:
+                return -1
 
 
 
@@ -292,14 +295,14 @@ def Play():
                 pieceId = -1
             if not (currentPlayer*numPiece//numPlay) <= pieceId < (currentPlayer + 1)*numPiece//numPlay:
                 pieceId = -1
-            returnCode = Game.quantumMove(pieceId, roll)
-            if returnCode == 0:
-                phase = 2
-                print(f'\nMoved piece {color(currentPlayer, pieceId)} up to {roll} spaces.')
-            elif returnCode == -1:
-                print('\nInvalid piece')
-            else:
-                print('Something weird is happening, invalid steps. Should not be able to happen, debug your code you idiot!')
+                returnCode = Game.quantumMove(pieceId, roll)
+                if returnCode == 0:
+                    phase = 2
+                    print(f'\nMoved piece {color(currentPlayer, pieceId)} up to {roll} spaces.')
+                elif returnCode == -1:
+                    print('\nInvalid piece')
+                else:
+                    print('Something weird is happening, invalid steps. Should not be able to happen, debug your code you idiot!')
         if phase == 2:
             print(f'You may now observe a tile, the board has spaces from 0 to {boardlen}')
             print(f'To observe a tile n, type "{color(currentPlayer, "on")}"')
