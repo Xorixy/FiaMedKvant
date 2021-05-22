@@ -199,6 +199,8 @@ class FiaGame:
 
             self.gameState = {key: value // gcd for key, value in self.gameState.items()}
 
+            self.totalWeight = self.totalWeight // gcd
+
 
     def normalMove(self, boardTuple, pieceId, step):
         """"Takes a single board and performs a normal fia move"""
@@ -206,7 +208,7 @@ class FiaGame:
         board = list(boardTuple)
 
         #In order to win, one must roll exactly the right roll
-        if board[pieceId] + step <= self.boardLength:
+        if board[pieceId] + step < self.boardLength:
             board[pieceId] = board[pieceId] + step
 
             #Now, if the piece is not at the end, we check if it has squashed another piece:
