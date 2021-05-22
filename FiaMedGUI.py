@@ -30,12 +30,21 @@ def initialPrompt(message):
 
     win.addstr(h//2, (w-len(message))//2, message)
 
-    return int(win.getstr(h//2+2, w//2))
+    try:
+        return int(win.getstr(h//2+2, w//2))
+    except ValueError:
+        return -1
 
 def gameMessage(message, colorId):
     win.move(h-4, 2)
     win.clrtoeol()
     win.addstr(h-4, 2, message, curses.color_pair(colorId))
+
+def roundNoZero(value):
+    if round(value) == 0:
+        return ''
+    return str(round(value))
+
 
 def updateProbabilities():
     probabilities = Game.getProbabilities()
@@ -44,12 +53,18 @@ def updateProbabilities():
         win.clrtoeol()
         probs = probabilities[piece]
         for probIndex in range(len(probs)-1):
-            win.addstr(verCoords[piece], horCoords[probIndex], str(round(100*probs[probIndex])), curses.color_pair(piece // Game.piecesPerPlayer % 6 + 1))
+            win.addstr(verCoords[piece], horCoords[probIndex], roundNoZero(100*probs[probIndex]), curses.color_pair(piece // Game.piecesPerPlayer % 6 + 1))
 
 numPlay  = initialPrompt('Hello! How many players?')
-numPiece = numPlay*initialPrompt('How many pieces per player?')
-boardlen = initialPrompt('How long is the board?')
-maxRoll  = initialPrompt('How much is the maximum die roll?')
+if numPlay != -1:
+    numPiece = numPlay*initialPrompt('How many pieces per player?')
+    boardlen = initialPrompt('How long is the board?')
+    maxRoll  = initialPrompt('How much is the maximum die roll?')
+else:
+    numPlay  = 2
+    numPiece = 2*numPlay
+    boardlen = 10
+    maxRoll  = 6
 win.erase()
 
 horCoords = [6 + horStep*i for i in range(boardlen)]
