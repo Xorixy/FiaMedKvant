@@ -116,7 +116,7 @@ class FiaGame:
 
     def quantumMove(self, pieceId, maxMove):
         if self.dataType == 'int':
-            if (0 < pieceId < self.numPiece) and (maxMove >= 1):
+            if (0 <= pieceId < self.numPiece) and (maxMove >= 1):
                 #Dict with the new boards
                 newGameState = {}
 
@@ -295,14 +295,14 @@ def Play():
                 pieceId = -1
             if not (currentPlayer*numPiece//numPlay) <= pieceId < (currentPlayer + 1)*numPiece//numPlay:
                 pieceId = -1
-                returnCode = Game.quantumMove(pieceId, roll)
-                if returnCode == 0:
-                    phase = 2
-                    print(f'\nMoved piece {color(currentPlayer, pieceId)} up to {roll} spaces.')
-                elif returnCode == -1:
-                    print('\nInvalid piece')
-                else:
-                    print('Something weird is happening, invalid steps. Should not be able to happen, debug your code you idiot!')
+            returnCode = Game.quantumMove(pieceId, roll)
+            if returnCode == 0:
+                phase = 2
+                print(f'\nMoved piece {color(currentPlayer, pieceId)} up to {roll} spaces.')
+            elif returnCode == -1:
+                print('\nInvalid piece')
+            else:
+                print('Something weird is happening, invalid steps. Should not be able to happen, debug your code you idiot!')
         if phase == 2:
             print(f'You may now observe a tile, the board has spaces from 0 to {boardlen}')
             print(f'To observe a tile n, type "{color(currentPlayer, "on")}"')
